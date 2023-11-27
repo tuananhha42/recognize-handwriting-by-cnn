@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Draw and Predict</title>
+</head>
+<body>
+    <h1>Draw and Predict</h1>
+    <canvas id="canvas" width="400" height="400" style="border: 1px solid black;"></canvas>
+    <button onclick="clearCanvas()">Clear</button>
+    <button onclick="predictDigit()">Predict</button>
+    <label for="lineWidth">Line Width:</label>
+    <input type="range" id="lineWidth" min="20" max="30" value="30" step="1" oninput="updateLineWidth(this.value); validateLineWidth()">
+    <span id="lineWidthValue">30</span>
+    <br>
+    <label for="lineColor">Line Color:</label>
+    <input type="color" id="lineColor" value="#000000" onchange="updateLineColor(this.value)">
+    <br>
+    <label for="backgroundColor">Background Color:</label>
+    <input type="color" id="backgroundColor" value="#ffffff" onchange="updateBackgroundColor(this.value)">
+    
+    <script>
+        var canvas = document.getElementById('canvas');
+        var context = canvas.getContext('2d');
+        var drawing = false;
+        var lineWidth = 30; // Độ dày của đường vẽ mặc định (ban đầu là 20)
+        var lineColor = 'white'; // Màu đường vẽ
+        var backgroundColor = 'black'; // Màu nền trắng
+
+        function updateLineWidth(value) {
+            lineWidth = parseInt(value);
+            document.getElementById('lineWidthValue').textContent = lineWidth;
+        }
+
+        function updateLineColor(value) {
+            lineColor = value;
+        }
+
+        function updateBackgroundColor(value) {
+            backgroundColor = value;
+            context.fillStyle = backgroundColor;
+            context.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Thiết lập màu nền trắng ban đầu
+        context.fillStyle = backgroundColor;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        canvas.addEventListener('mousedown', function(e) {
+            drawing = true;
+            context.beginPath();
+            context.moveTo(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
+        });
+
+        canvas.addEventListener('mousemove', function(e) {
+            if (drawing) {
+                context.lineTo(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
+                context.lineWidth = lineWidth;
+                context.strokeStyle = lineColor; // Đặt màu cho đường vẽ
+                context.stroke();
+            }
+        });
+
+        canvas.addEventListener('mouseup', function() {
+            drawing = false;
+        });
+
+        function clearCanvas() {
+            context.fillStyle = backgroundColor;
+            context.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function predictDigit() {
+            var dataURL = canvas.toDataURL();
+            fetch('/predict_digit', {
+                method: 'POST',
+                body: new URLSearchParams({ data_url: dataURL }),
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                var predictedDigit = data.predicted_digit;
+                alert("Predicted Digit: " + predictedDigit);
+            })
+            .catch(error => console.error('Lỗi:', error));
+        }
+
+        // Hàm để đảm bảo độ dày nét vẽ nằm trong khoảng từ 20 đến 30
+        function validateLineWidth() {
+            if (lineWidth < 20) {
+                lineWidth = 20;
+            } else if (lineWidth > 30) {
+                lineWidth = 30;
+            }
+            document.getElementById('lineWidth').value = lineWidth;
+            document.getElementById('lineWidthValue').textContent = lineWidth;
+        }
+    </script>
+</body>
+</html>
